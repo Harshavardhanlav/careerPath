@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { backend } from '@/api/backendClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,16 @@ export default function Resources() {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.LearningResource.list('-created_date', 200).then(data => {
-      // Group by skill_name
+    backend.get('/resources').then(data => {
       const grouped = {};
       data.forEach(r => {
         if (!grouped[r.skill_name]) grouped[r.skill_name] = [];
         grouped[r.skill_name].push(r);
       });
       setResources(grouped);
+      setInitialLoading(false);
+    }).catch(() => {
+      setResources({});
       setInitialLoading(false);
     });
   }, []);
@@ -31,37 +33,51 @@ export default function Resources() {
 
   const generateResources = async (skill) => {
     setLoadingSkill(skill);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Generate 6 real learning resources for the skill: "${skill}".
-Include a mix of free (YouTube, official docs, freeCodeCamp, MDN, etc.) and paid (Udemy, Coursera, Pluralsight) resources.
-Only include real, well-known URLs that actually exist.
-Return exactly this JSON structure.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          resources: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                url: { type: "string" },
-                platform: { type: "string" },
-                type: { type: "string", enum: ["free", "paid"] }
-              }
-            }
-          }
-        }
+
+    // Mock resources for demo - in a real app, this would be AI-generated
+    const mockResources = [
+      {
+        title: `${skill} - Official Documentation`,
+        url: `https://developer.mozilla.org/en-US/docs/Web/${skill.replace(' ', '_')}`,
+        platform: 'MDN',
+        type: 'free'
+      },
+      {
+        title: `${skill} Tutorial on freeCodeCamp`,
+        url: 'https://www.freecodecamp.org/learn/',
+        platform: 'freeCodeCamp',
+        type: 'free'
+      },
+      {
+        title: `${skill} YouTube Course`,
+        url: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(skill + ' tutorial'),
+        platform: 'YouTube',
+        type: 'free'
+      },
+      {
+        title: `${skill} Complete Course on Udemy`,
+        url: 'https://www.udemy.com/',
+        platform: 'Udemy',
+        type: 'paid'
+      },
+      {
+        title: `${skill} Certification on Coursera`,
+        url: 'https://www.coursera.org/',
+        platform: 'Coursera',
+        type: 'paid'
+      },
+      {
+        title: `${skill} Interactive Learning on Codecademy`,
+        url: 'https://www.codecademy.com/',
+        platform: 'Codecademy',
+        type: 'free'
       }
-    });
+    ];
 
-    const newResources = result.resources || [];
-    // Save to DB
-    await Promise.all(newResources.map(r =>
-      base44.entities.LearningResource.create({ ...r, skill_name: skill })
-    ));
+    // Save to backend
+    await backend.post('/resources', mockResources.map(r => ({ ...r, skill_name: skill })));
 
-    setResources(prev => ({ ...prev, [skill]: newResources.map((r, i) => ({ ...r, id: `ai-${skill}-${i}` })) }));
+    setResources(prev => ({ ...prev, [skill]: mockResources.map((r, i) => ({ ...r, id: `mock-${skill}-${i}` })) }));
     setLoadingSkill(null);
   };
 

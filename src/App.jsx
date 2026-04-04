@@ -4,23 +4,23 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
-import Landing from './pages/Landing';
-import SkillInput from './pages/SkillInput';
+import Landing from './components/pages/Landing';
+import SkillInput from './components/pages/SkillInput';
 import DashboardLayout from './components/dashboard/DashboardLayout';
-import Dashboard from './pages/Dashboard';
-import Roadmap from './pages/Roadmap';
-import Resources from './pages/Resources';
-import Quizzes from './pages/Quizzes';
-import Jobs from './pages/Jobs';
-import Notifications from './pages/Notifications';
-import Advisor from './pages/Advisor';
+import Dashboard from './components/pages/Dashboard';
+import Roadmap from './components/pages/Roadmap';
+import Resources from './components/pages/Resources';
+import Quizzes from './components/pages/Quizzes';
+import Jobs from './components/pages/jobs';
+import Notifications from './components/pages/Notifications';
+import Advisor from './components/pages/Advisor';
+import Login from './components/pages/Login';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
@@ -28,10 +28,8 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    }
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
   return (
@@ -56,7 +54,7 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthenticatedApp />
         </Router>
         <Toaster />

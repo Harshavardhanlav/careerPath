@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { backend } from '@/api/backendClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,49 +15,21 @@ const iconMap = { Monitor, Server, Layers, BarChart3, Settings };
 
 export default function SkillInput() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1); // 1: skills, 2: career
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [typedSkills, setTypedSkills] = useState('');
   const [selectedCareer, setSelectedCareer] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isAuth, setIsAuth] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
   const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    base44.auth.isAuthenticated().then(setIsAuth);
-  }, []);
 
   const handleResumeUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setResumeLoading(true);
-    toast('Extracting skills from your resume...');
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: {
-        type: "object",
-        properties: {
-          skills: {
-            type: "array",
-            items: { type: "string" },
-            description: "All technical skills, programming languages, frameworks, tools found in the resume"
-          }
-        }
-      }
-    });
-    const extracted = result.output?.skills || [];
-    if (extracted.length > 0) {
-      setTypedSkills(prev => {
-        const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
-        const merged = [...new Set([...existing, ...extracted])];
-        return merged.join(', ');
-      });
-      toast.success(`Extracted ${extracted.length} skills from your resume!`);
-    } else {
-      toast.error('Could not extract skills. Try typing them manually.');
-    }
+    toast('Resume upload feature coming soon. Please select skills manually for now.');
     setResumeLoading(false);
   };
 
@@ -76,60 +49,56 @@ export default function SkillInput() {
   const canProceed = allSkills.length >= 3;
 
   const handleAnalyze = async () => {
-    if (!isAuth) {
-      base44.auth.redirectToLogin(window.location.pathname);
-      return;
-    }
     if (!selectedCareer) {
       toast.error('Please select a career path');
       return;
     }
 
     setLoading(true);
-    
-    // Find or create career path in DB
-    const careerPaths = await base44.entities.CareerPath.filter({ title: selectedCareer.title });
+
+    const careerPaths = await backend.get(`/career-paths?title=${encodeURIComponent(selectedCareer.title)}`);
     let careerPathId;
+
     if (careerPaths.length > 0) {
-      careerPathId = careerPaths[0].id;
+      careerPathId = careerPaths[0]._id;
     } else {
-      const created = await base44.entities.CareerPath.create({
+      const created = await backend.post('/career-paths', {
         title: selectedCareer.title,
         description: selectedCareer.description,
         required_skills: selectedCareer.required_skills,
         skill_order: selectedCareer.skill_order,
-        icon: selectedCareer.icon
+        icon: selectedCareer.icon,
+        created_by: user.email,
       });
-      careerPathId = created.id;
+      careerPathId = created._id;
     }
 
-    // Calculate missing skills
     const knownSkills = allSkills.filter(s => selectedCareer.required_skills.includes(s));
     const missingSkills = selectedCareer.required_skills.filter(s => !allSkills.includes(s));
     const percentage = Math.round((knownSkills.length / selectedCareer.required_skills.length) * 100);
     const level = percentage < 30 ? 'beginner' : percentage < 70 ? 'intermediate' : 'advanced';
 
-    // Check if user already has progress
-    const user = await base44.auth.me();
-    const existing = await base44.entities.UserProgress.filter({ created_by: user.email });
-    
+    const existing = await backend.get(`/user-progress?created_by=${encodeURIComponent(user.email)}`);
+
     if (existing.length > 0) {
-      await base44.entities.UserProgress.update(existing[0].id, {
+      await backend.put(`/user-progress/${existing[0]._id}`, {
+        created_by: user.email,
         career_path_id: careerPathId,
         known_skills: knownSkills,
         missing_skills: missingSkills,
         completed_skills: knownSkills,
         level,
-        percentage
+        percentage,
       });
     } else {
-      await base44.entities.UserProgress.create({
+      await backend.post('/user-progress', {
+        created_by: user.email,
         career_path_id: careerPathId,
         known_skills: knownSkills,
         missing_skills: missingSkills,
         completed_skills: knownSkills,
         level,
-        percentage
+        percentage,
       });
     }
 

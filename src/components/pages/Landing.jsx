@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Rocket, Target, BookOpen, BarChart3, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 const features = [
   { icon: Target, title: "Smart Analysis", desc: "Upload your resume or select skills — we identify your strengths and gaps instantly." },
@@ -20,11 +20,7 @@ const stats = [
 ];
 
 export default function Landing() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-
-  React.useEffect(() => {
-    base44.auth.isAuthenticated().then(setIsAuthenticated);
-  }, []);
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -44,8 +40,12 @@ export default function Landing() {
               </Link>
             ) : (
               <>
-                <Button variant="ghost" className="rounded-full" onClick={() => base44.auth.redirectToLogin()}>Log in</Button>
-                <Button className="rounded-full px-6" onClick={() => base44.auth.redirectToLogin()}>Sign up free</Button>
+                <Link to="/login">
+                  <Button variant="ghost" className="rounded-full">Log in</Button>
+                </Link>
+                <Link to="/login">
+                  <Button className="rounded-full px-6">Sign up free</Button>
+                </Link>
               </>
             )}
           </div>

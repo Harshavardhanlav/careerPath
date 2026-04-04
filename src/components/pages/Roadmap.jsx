@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { backend } from '@/api/backendClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,7 +48,7 @@ export default function Roadmap() {
     const pct = Math.round((newCompleted.length / skillOrder.length) * 100);
     const level = pct < 30 ? 'beginner' : pct < 70 ? 'intermediate' : 'advanced';
 
-    await base44.entities.UserProgress.update(progress.id, {
+    await backend.put(`/user-progress/${progress._id}`, {
       completed_skills: newCompleted,
       known_skills: allKnown,
       missing_skills: missing,

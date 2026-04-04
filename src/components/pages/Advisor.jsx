@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,23 +29,30 @@ export default function Advisor() {
     setInput('');
     setLoading(true);
 
-    const completed = progress?.completed_skills || [];
-    const missing = progress?.missing_skills || [];
-    const pct = progress?.percentage || 0;
+    // Simple mock responses based on keywords
+    const userInput = input.trim().toLowerCase();
+    let response = '';
 
-    const systemContext = `You are an expert AI career advisor for the CareerMap platform. 
-The user is pursuing: ${careerPath?.title || 'a tech career'}.
-Their progress: ${pct}% complete.
-Completed skills: ${completed.join(', ') || 'none yet'}.
-Remaining skills: ${missing.join(', ') || 'none'}.
-Give concise, actionable, encouraging advice. Use markdown for formatting.`;
+    if (userInput.includes('next') || userInput.includes('learn')) {
+      const missing = progress?.missing_skills || [];
+      if (missing.length > 0) {
+        response = `Great question! 🎯\n\nBased on your progress, here are the **next skills** you should focus on:\n\n${missing.slice(0, 3).map(skill => `• **${skill}**`).join('\n')}\n\nStart with online tutorials on YouTube or freeCodeCamp. Practice daily for 1-2 hours!`;
+      } else {
+        response = `Excellent! 🎉 You've completed all the required skills for ${careerPath?.title || 'your career path'}!\n\nConsider:\n• Building real projects to showcase your skills\n• Contributing to open source\n• Preparing for interviews\n• Exploring advanced topics`;
+      }
+    } else if (userInput.includes('interview') || userInput.includes('job')) {
+      response = `Smart focus on interviews! 💼\n\n**Key preparation steps:**\n\n1. **Technical Skills**: Practice coding problems on LeetCode/HackerRank\n2. **System Design**: Study common patterns for your role\n3. **Behavioral Questions**: Prepare STAR method answers\n4. **Projects**: Have 2-3 strong projects to discuss\n\n**Resources:**\n• Pramp for mock interviews\n• Interviewing.io for anonymous practice\n• Company-specific LeetCode questions`;
+    } else if (userInput.includes('project') || userInput.includes('build')) {
+      response = `Building projects is crucial! 🚀\n\n**Project Ideas for ${careerPath?.title || 'your field'}:**\n\n• **Portfolio Website**: Showcase your skills\n• **Full-Stack App**: Combine frontend + backend\n• **API Integration**: Work with real APIs\n• **Open Source**: Contribute to existing projects\n\nStart small, focus on clean code and documentation!`;
+    } else {
+      response = `Thanks for your question! 🤔\n\nI'm here to help with:\n• **Learning recommendations** for your career path\n• **Skill development** strategies\n• **Interview preparation** tips\n• **Project ideas** and guidance\n\nCould you be more specific about what you'd like to know? For example:\n- "What should I learn next?"\n- "How do I prepare for interviews?"\n- "What projects should I build?"`;
+    }
 
-    const reply = await base44.integrations.Core.InvokeLLM({
-      prompt: `${systemContext}\n\nUser question: ${input.trim()}`,
-    });
-
-    setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    setLoading(false);
+    // Simulate typing delay
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setLoading(false);
+    }, 1000);
   };
 
   const handleKeyDown = (e) => {

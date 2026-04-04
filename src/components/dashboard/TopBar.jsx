@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { backend } from '@/api/backendClient';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Menu, Moon, Sun, Bell, BellOff } from 'lucide-react';
+import { Menu, Moon, Sun, Bell, BellOff, LogOut } from 'lucide-react';
 
 export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user, logout } = useAuth();
 
   const isDark = progress?.theme === 'dark';
   const notifEnabled = progress?.notifications_enabled !== false;
@@ -20,7 +17,7 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
     const newTheme = isDark ? 'light' : 'dark';
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
     if (progress) {
-      await base44.entities.UserProgress.update(progress.id, { theme: newTheme });
+      await backend.put(`/user-progress/${progress._id}`, { theme: newTheme });
       onProgressUpdate({ ...progress, theme: newTheme });
     }
   };
@@ -28,7 +25,7 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
   const toggleNotifications = async () => {
     if (progress) {
       const newVal = !notifEnabled;
-      await base44.entities.UserProgress.update(progress.id, { notifications_enabled: newVal });
+      await backend.put(`/user-progress/${progress._id}`, { notifications_enabled: newVal });
       onProgressUpdate({ ...progress, notifications_enabled: newVal });
     }
   };
@@ -41,7 +38,7 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
     }
   }, [progress?.theme]);
 
-  const initials = user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
+  const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U';
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border/50 bg-background/80 backdrop-blur-xl flex items-center px-4 md:px-6 gap-4">
@@ -55,7 +52,7 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium">{user?.full_name || 'User'}</p>
+              <p className="text-sm font-medium">{user?.name || 'User'}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <Avatar className="w-9 h-9 bg-primary">
@@ -67,7 +64,7 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuLabel>
-            <p className="font-medium">{user?.full_name}</p>
+            <p className="font-medium">{user?.name}</p>
             <p className="text-xs font-normal text-muted-foreground">{user?.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -86,7 +83,8 @@ export default function TopBar({ onMenuClick, progress, onProgressUpdate }) {
             <Switch checked={notifEnabled} />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => base44.auth.logout('/')} className="text-destructive cursor-pointer">
+          <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer">
+            <LogOut className="w-4 h-4 mr-2" />
             Log out
           </DropdownMenuItem>
         </DropdownMenuContent>

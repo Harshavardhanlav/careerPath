@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
+import { backend } from '@/api/backendClient';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
@@ -10,11 +11,17 @@ export default function DashboardLayout() {
   const [careerPath, setCareerPath] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     async function load() {
-      const user = await base44.auth.me();
-      const progList = await base44.entities.UserProgress.filter({ created_by: user.email });
+      if (!user?.email) {
+        setLoading(false);
+        navigate('/');
+        return;
+      }
+
+      const progList = await backend.get(`/user-progress?created_by=${encodeURIComponent(user.email)}`);
       if (progList.length === 0) {
         navigate('/analyze');
         return;
@@ -23,13 +30,17 @@ export default function DashboardLayout() {
       setProgress(prog);
 
       if (prog.career_path_id) {
-        const paths = await base44.entities.CareerPath.filter({ id: prog.career_path_id });
-        if (paths.length > 0) setCareerPath(paths[0]);
+        try {
+          const path = await backend.get(`/career-paths/${prog.career_path_id}`);
+          setCareerPath(path);
+        } catch (error) {
+          console.warn('Career path lookup failed', error);
+        }
       }
       setLoading(false);
     }
     load();
-  }, [navigate]);
+  }, [navigate, user]);
 
   if (loading) {
     return (

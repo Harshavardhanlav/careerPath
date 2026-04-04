@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { backend } from '@/api/backendClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,11 +13,14 @@ export default function Jobs() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.JobOpportunity.list('-created_date', 100).then(data => {
+    backend.get(`/jobs?career_path=${encodeURIComponent(careerPath?.title || '')}`).then(data => {
       setJobs(data);
       setLoading(false);
+    }).catch(() => {
+      setJobs([]);
+      setLoading(false);
     });
-  }, []);
+  }, [careerPath]);
 
   if (!careerPath) return null;
 
@@ -57,13 +60,13 @@ export default function Jobs() {
 
           <TabsContent value="jobs" className="mt-4 space-y-3">
             {jobList.map(job => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job._id} job={job} />
             ))}
             {jobList.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No jobs listed yet.</p>}
           </TabsContent>
           <TabsContent value="internships" className="mt-4 space-y-3">
             {internships.map(job => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job._id} job={job} />
             ))}
             {internships.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No internships listed yet.</p>}
           </TabsContent>

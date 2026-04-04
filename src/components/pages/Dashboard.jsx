@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import CircularProgress from '@/components/dashboard/CircularProgress';
 import SkillBar from '@/components/dashboard/SkillBar';
 import HelpPanel from '@/components/dashboard/HelpPanel';
-import { base44 } from '@/api/base44Client';
+import { backend } from '@/api/backendClient';
 import { TrendingUp, CheckCircle2, AlertCircle, Route, BookOpen, FlaskConical, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
@@ -20,7 +20,7 @@ export default function Dashboard() {
 
   const handleRestart = async () => {
     setRestarting(true);
-    await base44.entities.UserProgress.update(progress.id, {
+    await backend.put(`/user-progress/${progress._id}`, {
       career_path_id: '',
       known_skills: [],
       completed_skills: [],

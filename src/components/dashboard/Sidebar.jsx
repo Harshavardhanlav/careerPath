@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Route, BookOpen, FlaskConical, Briefcase, Bell, Sparkles, LogOut, X, Bot } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
@@ -16,10 +16,7 @@ const navItems = [
 
 export default function Sidebar({ mobileOpen, onCloseMobile }) {
   const location = useLocation();
-
-  const handleLogout = () => {
-    base44.auth.logout('/');
-  };
+  const { logout } = useAuth();
 
   const content = (
     <div className="flex flex-col h-full">
@@ -58,7 +55,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
 
       <div className="p-3 mt-auto">
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all w-full"
         >
           <LogOut className="w-4 h-4" />
