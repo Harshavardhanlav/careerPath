@@ -9,6 +9,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import CircularProgress from '@/components/dashboard/CircularProgress';
 import SkillBar from '@/components/dashboard/SkillBar';
 import HelpPanel from '@/components/dashboard/HelpPanel';
+import SkillDecayTracker from '@/components/dashboard/SkillDecayTracker';
+import LearningDNAProfile from '@/components/dashboard/LearningDNAProfile';
+import ConfusionDetectionSystem from '@/components/dashboard/ConfusionDetectionSystem';
+import CareerRealityCheck from '@/components/dashboard/CareerRealityCheck';
+import MiniInternshipMode from '@/components/dashboard/MiniInternshipMode';
 import { backend } from '@/api/backendClient';
 import { TrendingUp, CheckCircle2, AlertCircle, Route, BookOpen, FlaskConical, Sparkles, RefreshCw } from 'lucide-react';
 
@@ -140,6 +145,21 @@ export default function Dashboard() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Skill Decay Tracker */}
+      <SkillDecayTracker />
+
+      {/* Learning DNA Profile */}
+      <LearningDNAProfile />
+
+      {/* Confusion Detection System */}
+      <ConfusionDetectionSystem />
+
+      {/* Career Reality Check */}
+      <CareerRealityCheck />
+
+      {/* Mini Internship Mode */}
+      <MiniInternshipMode />
 
       {/* Two column: Known & Missing */}
       <div className="grid md:grid-cols-2 gap-6">

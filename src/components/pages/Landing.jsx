@@ -99,6 +99,59 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Reverse Career Finder */}
+      <section className="py-20 bg-gradient-to-r from-primary/5 to-accent/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
+              🎯 Know Your Goal? <span className="text-primary">We Build Backward</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Tell us your dream salary, company, or role — we'll create the exact roadmap to get there.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {[
+              { icon: Target, title: "Salary Target", desc: "Enter '15 LPA' and get the skills needed", example: '"I want ₹15 LPA job"' },
+              { icon: Rocket, title: "Dream Company", desc: "Company-focused career planning", example: '"I want to work at Google"' },
+              { icon: CheckCircle2, title: "Specific Role", desc: "Direct role-based roadmaps", example: '"I want to be a Data Scientist"' }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <item.icon className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-heading text-xl font-semibold mb-2">{item.title}</h3>
+                <p className="text-muted-foreground mb-3">{item.desc}</p>
+                <div className="text-sm bg-card rounded-lg p-3 border">
+                  <code className="text-primary">{item.example}</code>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/reverse-finder">
+              <Button size="lg" className="rounded-full px-8 py-6 text-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
+                Try Reverse Career Finder <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">

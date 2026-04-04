@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 
 import Landing from './components/pages/Landing';
 import SkillInput from './components/pages/SkillInput';
+import ReverseCareerFinder from './components/pages/ReverseCareerFinder';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import Dashboard from './components/pages/Dashboard';
 import Roadmap from './components/pages/Roadmap';
@@ -36,6 +37,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/analyze" element={<SkillInput />} />
+      <Route path="/reverse-finder" element={<ReverseCareerFinder />} />
       <Route element={<DashboardLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/roadmap" element={<Roadmap />} />

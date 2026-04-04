@@ -15,9 +15,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  password: {
+    type: String,
+    required: true
+  },
   profile: {
     type: Object,
     default: {}
+  },
+  learningProfile: {
+    type: Object,
+    default: {
+      learningStyle: 'balanced', // fast/slow/balanced
+      preference: 'practical', // practical/theory/balanced
+      skillDecayRate: 0.1, // how fast skills decay
+      confidenceLevels: {}, // skill -> confidence %
+      lastActivity: new Date()
+    }
   },
   createdAt: {
     type: Date,

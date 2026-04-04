@@ -1,11 +1,17 @@
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('careerPath_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const request = async (path, options = {}) => {
   const url = `${apiBase}${path}`;
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...(options.headers || {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,

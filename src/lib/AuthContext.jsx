@@ -11,29 +11,40 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is stored in localStorage
     const storedUser = localStorage.getItem('careerPath_user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('careerPath_token');
+
+    if (storedUser && storedToken) {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
         setIsAuthenticated(true);
+        // Set token in backend client
+        backend.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('careerPath_user');
+        localStorage.removeItem('careerPath_token');
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, token) => {
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('careerPath_user', JSON.stringify(userData));
+    if (token) {
+      localStorage.setItem('careerPath_token', token);
+      backend.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('careerPath_user');
+    localStorage.removeItem('careerPath_token');
+    delete backend.defaults.headers.common['Authorization'];
   };
 
   return (

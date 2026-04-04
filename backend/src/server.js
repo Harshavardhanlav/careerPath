@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { authenticateToken } from './middleware/auth.js';
 import careerPathRoutes from './routes/careerPathRoutes.js';
 import userProgressRoutes from './routes/userProgressRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
@@ -37,12 +38,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api/career-paths', careerPathRoutes);
-app.use('/api/user-progress', userProgressRoutes);
-app.use('/api/quizzes', quizRoutes);
-app.use('/api/resources', resourceRoutes);
-app.use('/api/jobs', jobRoutes);
+// Public routes
 app.use('/api/users', userRoutes);
+
+// Protected routes
+app.use('/api/career-paths', authenticateToken, careerPathRoutes);
+app.use('/api/user-progress', authenticateToken, userProgressRoutes);
+app.use('/api/quizzes', authenticateToken, quizRoutes);
+app.use('/api/resources', authenticateToken, resourceRoutes);
+app.use('/api/jobs', authenticateToken, jobRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
