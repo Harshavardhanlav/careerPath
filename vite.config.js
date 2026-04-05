@@ -11,13 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // No backend proxy needed; data is now handled locally in browser storage
   },
   plugins: [
     react(),
