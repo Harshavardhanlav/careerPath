@@ -4,13 +4,14 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
+  logLevel: 'info',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
+    host: '127.0.0.1',
     // No backend proxy needed; data is now handled locally in browser storage
   },
   plugins: [
