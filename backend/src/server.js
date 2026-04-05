@@ -10,7 +10,7 @@ import resourceRoutes from './routes/resourceRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
-dotenv.config();
+dotenv.config({ path: '../.env' });
 
 const app = express();
 app.use(cors());
