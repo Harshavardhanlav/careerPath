@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Rocket, Target, BookOpen, BarChart3, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { backend } from '@/api/backendClient';
 
 const features = [
   { icon: Target, title: "Smart Analysis", desc: "Upload your resume or select skills — we identify your strengths and gaps instantly." },
@@ -20,19 +21,40 @@ const stats = [
 ];
 
 export default function Landing() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogoClick = async () => {
+    if (!isAuthenticated || !user?.email) {
+      navigate('/');
+      return;
+    }
+
+    // Check if there's an existing journey
+    try {
+      const progList = await backend.get(`/user-progress?created_by=${encodeURIComponent(user.email)}`);
+      if (progList.length > 0 && progList[0].career_path_id) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+    } catch (error) {
+      console.warn('Failed to check progress', error);
+    }
+    // Stay on landing if no journey exists
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background font-body">
       {/* Nav */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button onClick={handleLogoClick} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-heading text-xl font-bold">CareerMap</span>
-          </div>
+          </button>
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
               <Link to="/dashboard">

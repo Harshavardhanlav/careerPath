@@ -21,7 +21,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
   const content = (
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-sidebar-primary-foreground" />
           </div>

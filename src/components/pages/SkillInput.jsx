@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Sparkles, Monitor, Server, Layers, BarChart3, Settings, PenLine, Upload, FileText } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Sparkles, Monitor, Server, Layers, BarChart3, Settings, PenLine, Upload, FileText, X } from 'lucide-react';
 import { ALL_SKILLS, CAREER_PATHS } from '@/lib/skillData';
 import { toast } from 'sonner';
+// import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import mammoth from 'mammoth';
 
 const iconMap = { Monitor, Server, Layers, BarChart3, Settings };
 
@@ -19,18 +21,123 @@ export default function SkillInput() {
   const [step, setStep] = useState(1); // 1: skills, 2: career
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [typedSkills, setTypedSkills] = useState('');
+  const [resumeSkills, setResumeSkills] = useState([]);
   const [selectedCareer, setSelectedCareer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const fileInputRef = useRef(null);
+
+  // Check if there's an existing journey on mount
+  useEffect(() => {
+    const checkExistingProgress = async () => {
+      if (!user?.email) {
+        setPageLoading(false);
+        return;
+      }
+
+      try {
+        const progList = await backend.get(`/user-progress?created_by=${encodeURIComponent(user.email)}`);
+        if (progList.length > 0 && progList[0].career_path_id) {
+          // Redirect to existing dashboard if journey exists
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      } catch (error) {
+        console.warn('Failed to check progress', error);
+      }
+      setPageLoading(false);
+    };
+
+    checkExistingProgress();
+  }, [user, navigate]);
 
   const handleResumeUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Check file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a PDF or Word document (.doc, .docx)');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
     setResumeLoading(true);
-    toast('Resume upload feature coming soon. Please select skills manually for now.');
-    setResumeLoading(false);
+
+    try {
+      const extractedSkills = await parseResume(file);
+      setResumeSkills(extractedSkills);
+
+      if (extractedSkills.length > 0) {
+        toast.success(`Extracted ${extractedSkills.length} skills from your resume!`);
+      } else {
+        toast.warning('No skills were found in your resume. Please select skills manually or try a different file.');
+      }
+    } catch (error) {
+      console.error('Resume parsing error:', error);
+      toast.error('Failed to parse resume. Please try again or select skills manually.');
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const parseResume = async (file) => {
+    let text = '';
+
+    try {
+      if (file.type === 'application/pdf') {
+        // Parse PDF using dynamic import
+        const pdfParse = (await import('pdf-parse')).default;
+        const arrayBuffer = await file.arrayBuffer();
+        const data = await pdfParse(new Uint8Array(arrayBuffer));
+        text = data.text;
+      } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        // Parse DOC/DOCX
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      }
+
+      // Extract skills from text
+      return extractSkillsFromText(text);
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      throw error;
+    }
+  };
+
+  const extractSkillsFromText = (text) => {
+    const extractedSkills = [];
+    const lowerText = text.toLowerCase();
+
+    // Check each skill in our database
+    ALL_SKILLS.forEach(skill => {
+      const skillLower = skill.toLowerCase();
+      // Look for exact matches or variations
+      const patterns = [
+        new RegExp(`\\b${skillLower}\\b`, 'i'), // exact word match
+        new RegExp(`${skillLower.replace(/\s+/g, '\\s+')}`, 'i'), // multi-word skills
+      ];
+
+      const found = patterns.some(pattern => pattern.test(lowerText));
+      if (found && !extractedSkills.includes(skill)) {
+        extractedSkills.push(skill);
+      }
+    });
+
+    // Remove duplicates and return
+    return [...new Set(extractedSkills)];
+  };
+
+  const removeResumeSkill = (skillToRemove) => {
+    setResumeSkills(prev => prev.filter(skill => skill !== skillToRemove));
   };
 
   const toggleSkill = (skill) => {
@@ -45,7 +152,7 @@ export default function SkillInput() {
     .map(s => s.trim())
     .filter(s => s.length > 0);
 
-  const allSkills = [...new Set([...selectedSkills, ...parsedTypedSkills])];
+  const allSkills = [...new Set([...selectedSkills, ...parsedTypedSkills, ...resumeSkills])];
   const canProceed = allSkills.length >= 3;
 
   const handleAnalyze = async () => {
@@ -106,12 +213,34 @@ export default function SkillInput() {
     navigate('/dashboard');
   };
 
+  const handleLogoClick = async () => {
+    // Check if there's an existing journey
+    try {
+      const progList = await backend.get(`/user-progress?created_by=${encodeURIComponent(user.email)}`);
+      if (progList.length > 0 && progList[0].career_path_id) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+    } catch (error) {
+      console.warn('Failed to check progress', error);
+    }
+    // If no journey exists, go to landing
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-background font-body">
+      {/* Loading state */}
+      {pageLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+        </div>
+      )}
+
       {/* Header */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2">
+          <button onClick={handleLogoClick} className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -164,7 +293,7 @@ export default function SkillInput() {
               <Card className="mb-8 border-border/50">
                 <CardHeader>
                   <CardTitle className="text-lg font-heading flex items-center gap-2">
-                    <Upload className="w-5 h-5" /> Upload Resume (PDF)
+                    <Upload className="w-5 h-5" /> Upload Resume (PDF, DOC, DOCX)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -187,6 +316,29 @@ export default function SkillInput() {
                       </>
                     )}
                   </Button>
+
+                  {/* Display extracted skills */}
+                  {resumeSkills.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">Skills extracted from resume:</span>
+                        <Badge variant="secondary" className="text-xs">{resumeSkills.length} skills</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {resumeSkills.map(skill => (
+                          <Badge key={skill} className="bg-green-100 text-green-800 border border-green-200 text-xs flex items-center gap-1">
+                            {skill}
+                            <button
+                              onClick={() => removeResumeSkill(skill)}
+                              className="ml-1 hover:bg-green-200 rounded-full p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -219,9 +371,18 @@ export default function SkillInput() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   {canProceed ? (
-                    <span className="text-primary flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> {allSkills.length} skills selected</span>
+                    <span className="text-primary flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {allSkills.length} skills selected
+                      {selectedSkills.length > 0 && ` (${selectedSkills.length} selected`}
+                      {parsedTypedSkills.length > 0 && `${selectedSkills.length > 0 ? ', ' : ' ('}${parsedTypedSkills.length} typed`}
+                      {resumeSkills.length > 0 && `${(selectedSkills.length > 0 || parsedTypedSkills.length > 0) ? ', ' : ' ('}${resumeSkills.length} from resume`}
+                      {(selectedSkills.length > 0 || parsedTypedSkills.length > 0 || resumeSkills.length > 0) && ')'}                    </span>
                   ) : (
-                    <span className="text-destructive flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Select at least 3 skills</span>
+                    <span className="text-destructive flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      Select at least 3 skills total (selected: {selectedSkills.length}, typed: {parsedTypedSkills.length}, resume: {resumeSkills.length})
+                    </span>
                   )}
                 </div>
                 <Button onClick={() => setStep(2)} disabled={!canProceed} size="lg" className="rounded-full px-8">
